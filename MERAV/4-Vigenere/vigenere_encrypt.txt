@@ -1,0 +1,102 @@
+String key = "";
+String msg = "";
+
+enum Mode {
+  Msg,
+  Key
+};
+
+Mode mode;
+
+void setup(){
+  mode = Msg;
+  Serial.begin(9600);
+  Serial.print("Please enter your message: ");
+}
+
+void loop() {
+  while(Serial.available()) { 
+    if (mode == Msg) {
+      String msg_ = Serial.readString();
+      msg_.trim();
+      msg = msg_;
+      Serial.println(msg);
+      ask_for_key();
+    } else if (mode == Key) {
+      String key_ = Serial.readString();
+      key_.trim();
+      Serial.println(key_);
+      key = generate_key(key_, msg.length());
+      encrypt_message();
+    }
+  }
+}
+
+String vigenere_cipher(String plain, String _key) {
+  String encoded = "";
+  
+  if (plain.length() != _key.length()) {
+    Serial.println("The length of the message and the key do not match.");
+    mode = Msg;
+  }
+  
+  for (int i = 0; i < plain.length(); i++) {
+    char xc = plain.charAt(i);
+    char yc = key.charAt(i);
+
+    char enc = get_vig_char(int(xc), int(yc));
+
+    encoded += enc;
+  }
+
+  return encoded;
+}
+
+char get_vig_char(int _x, int _y) {
+    int x = to_uppercase(_x);
+    int y = to_uppercase(_y);
+
+    return char((x + y) % 26 + 65);
+}
+
+char to_uppercase(char _c) {
+  int c = int(_c);
+  if (c >= 65 && c <= 90) {
+    return _c;
+  } else if (c >= 97 && c <= 122) {
+    return char(c - 32);
+  } else {
+    Serial.println(_c);
+    Serial.println(c);
+    Serial.println("Incorrect character.");
+    mode = Msg;
+  }
+}
+
+String generate_key(String keyword, int len) {
+  String ret = "";
+  
+  if (len < 1) {
+    return ret;
+  }
+
+  while (ret.length() < len) {
+    ret += keyword;
+  }
+  
+  return ret.substring(0, len);
+}
+
+void ask_for_key() {
+    Serial.print("Enter the key: ");
+    mode = Key;
+}
+
+void encrypt_message() {
+    Serial.print("The encrypted message is: ");
+    String encoded = vigenere_cipher(msg, key);
+    Serial.println(encoded);
+    mode = Msg;
+
+    Serial.print("Please enter your message: ");
+}

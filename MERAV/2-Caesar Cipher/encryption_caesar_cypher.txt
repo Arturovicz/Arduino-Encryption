@@ -1,0 +1,29 @@
+void setup() {
+  Serial.begin(9600);
+  String input = "";
+  Serial.println("Enter Message: ");
+  
+  
+  while (!Serial.available()) {} 	//waiting
+  while (Serial.available() > 0) {  	//taking values
+   	input = Serial.readString();
+  }
+
+  String output = "";
+  for (int i = 0; i < input.length(); i++) {
+    char c = input.charAt(i);
+    if (is_char(c)) {
+      c = (c - 'a' + 3) % 26 + 'j';  //Ceasar Cypher with 3 letters
+    }
+    output += c;
+  }
+
+  Serial.println("Encrypted Message: ");
+  Serial.println(output);
+}
+
+bool is_char(char c) {						//see if the char is an actual value between Aa-Zz
+  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+}
+
+void loop() {}

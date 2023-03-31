@@ -1,0 +1,114 @@
+String key = "";
+String msg = "";
+
+enum Mode{
+  Msg,
+  Key
+};
+
+Mode mode;
+
+void setup(){
+  mode = Msg;
+  Serial.begin(9600);
+  Serial.print("Enter your encrypted message: ");
+}
+
+void loop() {
+  while(Serial.available()) { 
+    if mode == Msg) {
+      String msg_ = Serial.readString();
+      msg_.trim();
+      msg = msg_;
+      Serial.println(msg);
+      ask_key();
+    } else if mode == Key) {
+      String key_ = Serial.readString();
+      key_.trim();
+      Serial.println(key_);
+      key = make_key(key_, msg.length());
+      decrypt();
+    }
+  }
+}
+
+String erenegiv(String plain, String _key) {
+  String encoded = "";
+  
+  assert(!plain.isEmpty() && !_key.isEmpty());
+
+  if (plain.length() != _key.length()) {
+    Serial.println("plaintext and key length mismatch");
+    state = Msg;
+    return "";
+  }
+  
+  for (int i = 0; i < plain.length(); i++) {
+    char xc = plain.charAt(i);
+    char yc = key.charAt(i);
+
+    char enc = get_devig_at(int(xc), int(yc));
+
+    encoded += enc;
+  }
+
+  return encoded;
+}
+
+// get the position of a char in the Vigenere table with (x, y) as their index and returns the char at this position
+// note: x and y are considered uppercase only
+char get_devig_at(int _x, int _y) {
+    int x = to_uppercase(_x);
+    int y = to_uppercase(_y);
+
+    return char((x + 26 - y) % 26 + 65);
+}
+
+char to_uppercase(char _c) {
+  int c = int(_c);
+  switch(c) {
+    case 65 ... 90: // uppercase
+      return _c;
+    case 97 ... 122: // lowercase
+      return char(c - 32);
+    default:
+      Serial.println(_c);
+      Serial.println(c);
+      Serial.println("Wrong character");
+      state = Msg;
+      return '\0';
+  }
+}
+
+// create the key out of a keyword until matching len
+String make_key(String keyword, int len) {
+
+  assert(len > 0);
+  String ret = "";
+  
+  if (len < 1) {
+    return ret;
+  }
+
+  while (ret.length() < len) {
+    ret += keyword;		// string concat until it's more than the length
+  }
+  
+  // truncate
+  return ret.substring(0, len);
+}
+
+void ask_key() {
+    Serial.print("key: ");
+    mode = Key;
+}
+
+void decrypt() {
+    Serial.print("The decrypted message is: ");
+    String decoded = erenegiv(msg, key);
+
+    Serial.println(decoded);
+    state = Msg;
+
+    Serial.print("Enter your message: ");
+}

@@ -1,0 +1,76 @@
+void setup() {
+  Serial.begin(9600);
+  Serial.println("Enter a string:");
+  while (!Serial.available()) {} 		// wait for user input
+  String input = Serial.readString(); 		// read the user input
+  
+  // String to Char Array
+  int len = input.length();
+  char char_array[len+1];
+  input.toCharArray(char_array, len+1);
+
+  // Encryption of the array
+  byte* encrypted_array = encrypt(char_array, len);
+  for (int i=0; i < len; i++){
+  	Serial.println(encrypted_array[i]);
+  }
+  
+  // Decryption of the array
+  char* decrypted_array = decrypt(encrypted_array, len);
+  Serial.print("Decrypted string: ");
+  for (int i=0; i < len; i++){
+    Serial.print(decrypted_array[i]);
+  }
+  
+}
+
+
+byte* encrypt(char* in, int len) {
+  // discard one byte every 8 element
+  byte* encrypted = new byte[len - (len / 8)];
+
+  for (int i = 0; i < len; i++) {
+    // Take off the MSB
+    byte shifted = byte(in[i]) << 1;
+
+    if (i % 8 == 0) {
+      // only write at one place, new cycle
+      encrypted[i - (i / 8)] = shifted;
+    } else {
+      // Writing at two places, 
+      // Splitting the byte using bitwise shift operators
+      encrypted[i - (i / 8) - 1] |= shifted >> (8 - i % 8);
+      encrypted[i - (i / 8)] |= shifted << i % 8;
+    }
+  }
+
+  return encrypted;
+}
+
+char* decrypt(byte* in, int len) {
+  char* decrypted = new char[len * 8 / 9 + 1];
+  int decrypted_index = 0;
+  
+  for (int i = 0; i < len; i++) {
+    // Combine the 2 halves splitted in ecrypt()
+    byte combined = (in[i] << (i % 8)) | (in[i + 1] >> (8 - i % 8));
+
+    // Restore the MSB
+    char decrypted_char = (combined >> 1);
+
+    if (isChar(decrypted_char)) {
+      decrypted[decrypted_index++] = decrypted_char;
+    }
+  }
+
+  // Add null terminator
+  decrypted[decrypted_index] = '\0';
+
+  return decrypted;
+}
+
+bool is_char(char c) {
+  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+}
+
+void loop() {}

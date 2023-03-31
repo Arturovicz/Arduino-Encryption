@@ -1,0 +1,71 @@
+void setup() { 
+  Serial.begin(9600); 
+  Serial.println("Entrez la cle binaire en 8 bits :"); 
+  Serial.flush(); 
+  attachInterrupt(digitalPinToInterrupt(0), serialEvent, FALLING); 
+} 
+
+ 
+
+void loop() {} 
+
+ 
+
+void serialEvent() { 
+  static int cle[8]; // Creates a table to stock a binary key 
+  static int resultat[8]; // Creates a table to stock the result of XOR  
+
+  static String message = ""; //Initializes the string to save the message 
+
+ 
+  if (Serial.available() >= 8) { 
+    for (int i = 0; i < 8; i++) { 
+      cle[i] = Serial.read() - '0'; // ASCII to binary 
+    } 
+    Serial.println("Entrez les codes binaires en 8 bits separes par des virgules :"); 
+    Serial.flush(); 
+  } 
+
+  while (Serial.available()) { // Reading input 
+    String input = Serial.readStringUntil(','); // Takes until ',' occurs 
+    int code[8]; // Stocking binary values 
+    for (int i = 0; i < 8; i++) { 
+      code[i] = input.charAt(i) - '0'; // Converts ASCII to binary 
+
+    } 
+
+    // Does XOR between input and tthe key 
+    for (int i = 0; i < 8; i++) { 
+      resultat[i] = code[i] ^ cle[i]; // XOR 
+    } 
+
+    
+    Serial.print("Code binaire : "); //Printing the result in Binary
+    for (int i = 0; i < 8; i++) { 
+      Serial.print(code[i]); 
+    } 
+
+    Serial.print(" - Resultat en ASCII : "); //Printing the result in ASCII
+    char c = 0; // Initialiser le caractère ASCII 
+
+    for (int i = 0; i < 8; i++) { 
+      c += resultat[i] << (7 - i); // Convert binary to ASCII 
+      Serial.write(resultat[i] + '0'); 
+
+    } 
+
+    message += c; // Assembling ASCII chars 
+    Serial.println(); 
+
+  } 
+
+  if (message.length() > 0) { 
+    Serial.print("Message complet en ASCII : "); 
+    Serial.println(message); 
+    message = ""; 
+    Serial.println(); 
+    Serial.println("Entrez la cle binaire en 8 bits :"); 
+    Serial.flush(); 
+  } 
+
+} 

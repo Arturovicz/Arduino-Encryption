@@ -1,0 +1,127 @@
+/* ======INITIALIZATION======*/
+
+volatile unsigned long noise;
+char key_pr;
+long key_s = 0;
+
+String encoded = "";
+
+
+/* ======HELPER FUNCS====== */
+
+ISR(TIMER1_COMPA_vect) {
+  noise = analogRead(0); 								// read analog input 0 as the noise value
+}
+
+char rand_char_gen(){									//generate a random alph char between a and Z (ASCII standards)
+	char random_char = char(random(97, 123));
+  	return random_char;
+}
+
+
+
+/* ======MAIN FUNCS====== */
+
+void setup() {
+  Serial.begin(9600);
+  randomSeed(analogRead(A0));								// for the rand_char_gen() func
+  
+  TCCR1A = 0; 										// set timer1 to normal mode
+  TCCR1B |= (1 << CS12); 								// set prescaler to 256, because Arduino doesn't support high frequencies
+  OCR1A = 64; 										// set compare match register to generate PWM
+  TIMSK1 |= (1 << OCIE1A); 								// enable interrupt on compare match A
+  
+  
+ 	 /* USER PART */ 
+  
+  Serial.println("Enter a message");
+  while (!Serial.available()){}								// waiting for input
+  String message = Serial.readString();
+  Serial.println(message);
+  unsigned long fnoise = noise;								// noise value will no more vary, it is stored as fnoise
+  
+  
+ 	 /* ENCRYPTION PART */
+  
+  int length = message.length();							// to simplify the work
+  long codis[length];								
+  
+  for (int i = 0; i < length; i++) {
+    codis[i] = message.charAt(i) + 1;							// lists ASCII standardized values in codis[]
+    key_s += message.charAt(i);								// generate a secret key as an additional validation factor for the decryption
+  }
+  
+  String result = "";
+  for (int i = 0; i < length; i++) {							// listed values are turned into string:  
+    											// random generated const noise is added to make the code crack difficult
+    											// pseudo-random/random generated var alphabetic chars are added to not lose the track for decryption
+    result = result + String(codis[i] + fnoise) + rand_char_gen();
+  }
+
+  encoded = char(length) + result;							// another light security layer added to our enryption algorithm 
+  
+  
+  /* ENCODED RESULT */
+  Serial.println("Encrypted message");
+  Serial.println(encoded);
+  
+  
+  /* DECRYPTION PART */
+  Serial.println("Decrypted message");
+  Serial.println(decryption(encoded, key_s ,fnoise));					//if we put a random value instead of key_s, the decryption won't work
+  
+  
+}
+
+ 
+void loop() {}										// we do not need loop func
+
+
+
+/* ======DECRYPTION ALGORITHM====== */
+
+String decryption(String to_decode,long secret_key, long final_noise){
+  
+  if (secret_key != key_s){ 								// small verif condition, extra layer for our encryption
+    return "Secret key wrong";
+  
+  }  
+  
+  char c = to_decode.charAt(0); 							// retrieve the first char, which is the key_pr
+  int k_pr = int(c);									// this is message.length() from the encryption scope
+  to_decode = to_decode.substring(1); 							// left only with the message
+	
+  long arr[k_pr]; 									// declare an integer array the same size as in ecryption part
+  int arrIndex = 0;
+  bool inSequence = false; 								// track whether we are currently in a sequence of digits
+
+  for (int i = 0; i < to_decode.length(); i++) {
+    char currentChar = to_decode.charAt(i);
+
+    if (isalpha(currentChar)) { 							// check if the character is a letter
+      inSequence = false; 								// reset the inSequence flag
+    }
+    else if (isdigit(currentChar)) { 							// check if the character is a digit
+      if (!inSequence) { 								// if this is the start of a new sequence of digits
+        arr[arrIndex] = currentChar - '0'; 						// store the current digit in the array
+        arrIndex++;
+        inSequence = true; 								// set the inSequence flag
+      }
+      else { 										// if already in a sequence of digits
+        arr[arrIndex - 1] = arr[arrIndex - 1] * 10 + (currentChar - '0'); 
+        										// append the current digit to the previous integer value
+      }
+    }
+  }
+
+  String decoded = "";
+  for (int i = 0; i < arrIndex; i++) {							// left with the array of ASCII standardized integers, but still noise is applied
+    int intermed = arr[i] - 1 - final_noise;						// IMPORTANT! numbers start from 0 so -1 is mandatory here, plus noise is substracted from our pure signals
+    decoded += char(intermed);								// generate the message 
+  }
+  return decoded;
+
+}
+
+
+

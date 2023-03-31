@@ -1,0 +1,35 @@
+void setup() { 
+
+  Serial.begin(9600); 
+  Serial.println("Entrez un message :"); 
+  Serial.flush(); // Wait for any pending output to be sent 
+  attachInterrupt(digitalPinToInterrupt(0), serialEvent, FALLING); 
+
+} 
+
+ 
+
+void loop() {} 
+
+
+void serialEvent() { 
+
+  String message = Serial.readString(); 
+  byte key = random(256); // Generate random 8bit key 
+  Serial.print("Cle : "); 
+  Serial.println(key, BIN); 
+
+  Serial.print("Message chiffre : "); 
+  for (int i = 0; i < message.length(); i++) { 
+    byte c = message.charAt(i); 
+    String binary = String(c, BIN); 
+    while (binary.length() < 8) { 
+      binary = "0" + binary; 
+    } 
+
+    c ^= key; // Does XOR operation with the key 
+    Serial.print(c, BIN); 
+    Serial.print(" "); 
+  } 
+  Serial.println(); 
+} 

@@ -1,0 +1,62 @@
+
+
+void setup() {
+  Serial.begin(9600);
+  Serial.println("Enter a message to encrypt:");
+  while (Serial.available() == 0) {} 
+  String message = Serial.readString(); 						// Read the message from the serial monitor
+  char arrayed_mess[message.length() + 1];
+  message.toCharArray(arrayed_mess, message.length() + 1);				// the ley is itself as demanded
+ 
+  String encryptedMessage = encryptVigenere(message, arrayed_mess); 
+  Serial.print("Encrypted message: ");
+  Serial.println(encryptedMessage);							// Print the encrypted message to the serial monitor
+
+  String decryptedMessage = decryptVigenere(encryptedMessage, arrayed_mess); 
+  Serial.print("Decrypted message: ");							 // Print the decrypted message to the serial monitor
+  Serial.println(decryptedMessage);
+ 
+}
+
+void loop() {}
+
+
+String encryptVigenere(String message, const char* key) {
+  
+  String encryptedMessage = "";
+  int keyIndex = 0;
+
+  for (int i = 0; i < message.length(); i++) {
+    char c = message.charAt(i);
+    if (isalpha(c)) { 									// Check if char is alphabetic
+      char encryptedChar = (c + key[keyIndex] - 2 * 'A') % 26 + 'A'; 			//Decrypt char using Vigenère cypher and key
+      encryptedMessage += encryptedChar;
+      keyIndex = (keyIndex + 1) % strlen(key); 						// Increment the key index
+    } else { 										// Non-Alphabeic values are copied
+      encryptedMessage += c;
+    }
+  }
+
+  return encryptedMessage;
+}
+
+String decryptVigenere(String message, const char* key) {
+  String decryptedMessage = "";
+
+  int keyIndex = 0;
+
+  for (int i = 0; i < message.length(); i++) {
+    char c = message.charAt(i);
+    if (isAlpha(c)) { // Check if the character is an alphabetic letter
+      // Decrypt the character using the Vigenère cipher and the key
+      char decryptedChar = (c - key[keyIndex] + 26) % 26 + 'A';
+      decryptedMessage += decryptedChar;
+      keyIndex = (keyIndex + 1) % strlen(key); // Increment the key index, wrapping around if necessary
+    } else {
+      // Non-alphabetic characters are not decrypted, and are simply copied to the output message
+      decryptedMessage += c;
+    }
+  }
+
+  return decryptedMessage;
+}
